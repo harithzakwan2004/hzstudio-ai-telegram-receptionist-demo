@@ -1,0 +1,28 @@
+{
+  "name": "hzstudio-ai-telegram-receptionist-demo",
+  "version": "1.0.0",
+  "description": "A simple Telegram Gemini AI receptionist demo for dental clinics by HZStudio AI.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "telegram",
+    "gemini",
+    "express",
+    "ai-receptionist",
+    "dental"
+  ],
+  "author": "HZStudio AI",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@google/genai": "^1.51.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
