@@ -185,6 +185,14 @@ function isUrgentMessage(text) {
 function quickReply(text, state) {
   const lowerText = text.toLowerCase();
 
+  if (/^(hi|hello|hey|hai|salam|assalam|good morning|good afternoon|good evening)\b/i.test(lowerText)) {
+    return `Hello! Welcome to ${CLINIC_NAME}. I can help with opening hours, location, services, pricing questions, appointment requests, or connect you with staff.`;
+  }
+
+  if (/why|what happened|not working|problem|error/i.test(lowerText)) {
+    return 'I am here to help. You can ask about clinic hours, location, dental services, pricing, or say "book appointment" and I will collect your details for staff to confirm.';
+  }
+
   if (lowerText === '1') {
     return `${CLINIC_NAME} opening hours: ${CLINIC_HOURS}.`;
   }
@@ -375,6 +383,22 @@ async function handleTelegramMessage(message) {
     await sendTelegramMessage(chatId, aiReply);
   } catch (error) {
     console.error('AI reply failed:', error);
+    const fallbackReply =
+      quickReply(userText, state) ||
+      `Thanks for your message. I can help with clinic hours, location, services, pricing, appointment requests, or human staff handoff. If you want to book, please send your name, preferred date/time, treatment needed, and phone number.`;
+
+    rememberMessage(state, 'user', userText);
+    rememberMessage(state, 'assistant', fallbackReply);
+    await sendTelegramMessage(chatId, fallbackReply);
+  }
+}
+
+async function handleTelegramMessageOld(message) {
+  const chatId = message.chat.id;
+  try {
+    await handleTelegramMessage(message);
+  } catch (error) {
+    console.error('Telegram message fallback failed:', error);
     await sendTelegramMessage(
       chatId,
       `Sorry, I am having trouble replying right now. Please contact ${CLINIC_NAME} directly at ${CLINIC_PHONE}, or leave your name and phone number for staff follow-up.`
@@ -393,7 +417,7 @@ app.post('/telegram/webhook', async (req, res) => {
   if (!message) return;
 
   try {
-    await handleTelegramMessage(message);
+    await handleTelegramMessageOld(message);
   } catch (error) {
     console.error('Telegram webhook handling failed:', error);
   }
