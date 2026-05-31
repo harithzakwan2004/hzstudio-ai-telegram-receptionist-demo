@@ -19,7 +19,10 @@ This demo can answer common clinic questions, collect appointment requests, and 
 
 - Receives Telegram customer messages through a webhook
 - Replies like a friendly clinic receptionist
+- Switches between English and Bahasa Melayu for the main clinic templates
 - Answers opening hours, location, services, pricing disclaimer, emergency instructions, and human handoff requests
+- Handles promotion questions without inventing clinic offers
+- Retries once when Gemini returns an incomplete response
 - Collects appointment request details:
   - Customer name
   - Preferred date/time
@@ -55,6 +58,7 @@ CLINIC_NAME=Smile Dental Clinic
 CLINIC_LOCATION=123 Main Street, Kuala Lumpur
 CLINIC_HOURS=Monday to Saturday, 9:00 AM to 6:00 PM
 CLINIC_PHONE=+6012-345 6789
+CLINIC_PROMOTIONS=No active promotions at the moment.
 APPS_SCRIPT_WEBHOOK_URL=https://script.google.com/macros/s/your_deployment_id/exec
 INQUIRY_SHARED_SECRET=your_private_sheet_bridge_secret
 PORT=3000
@@ -100,6 +104,7 @@ Telegram AI receptionist demo is running.
    - `CLINIC_LOCATION`
    - `CLINIC_HOURS`
    - `CLINIC_PHONE`
+   - `CLINIC_PROMOTIONS`
    - `APPS_SCRIPT_WEBHOOK_URL`
    - `INQUIRY_SHARED_SECRET`
    - `PORT`
