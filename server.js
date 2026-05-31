@@ -12,6 +12,8 @@ const {
   CLINIC_LOCATION = 'our clinic location',
   CLINIC_HOURS = 'our usual clinic hours',
   CLINIC_PHONE = 'the clinic phone number',
+  APPS_SCRIPT_WEBHOOK_URL,
+  INQUIRY_SHARED_SECRET,
   PORT = 3000
 } = process.env;
 
@@ -21,6 +23,10 @@ if (!TELEGRAM_BOT_TOKEN) {
 
 if (!GEMINI_API_KEY) {
   console.warn('Missing GEMINI_API_KEY. AI replies will use the fallback message until it is set.');
+}
+
+if (!APPS_SCRIPT_WEBHOOK_URL || !INQUIRY_SHARED_SECRET) {
+  console.warn('Missing Google Sheet bridge settings. Appointment requests will not be saved until they are set.');
 }
 
 const gemini = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
@@ -43,17 +49,21 @@ const SERVICES = [
 
 const chatMemory = {};
 
+function emptyAppointment() {
+  return {
+    name: '',
+    preferredDateTime: '',
+    treatment: '',
+    phone: ''
+  };
+}
+
 function getChatState(chatId) {
   if (!chatMemory[chatId]) {
     chatMemory[chatId] = {
       messages: [],
       collectingAppointment: false,
-      appointment: {
-        name: '',
-        preferredDateTime: '',
-        treatment: '',
-        phone: ''
-      }
+      appointment: emptyAppointment()
     };
   }
 
@@ -178,6 +188,14 @@ function looksLikeAppointmentRequest(text) {
   return /appointment|book|booking|schedule|visit|slot|see dentist/i.test(text);
 }
 
+function beginAppointmentCollection(state) {
+  if (missingAppointmentFields(state.appointment).length === 0) {
+    state.appointment = emptyAppointment();
+  }
+
+  state.collectingAppointment = true;
+}
+
 function isUrgentMessage(text) {
   return /severe pain|bleeding|swelling|swollen|injury|accident|trauma|emergency|urgent|cannot breathe|fever/i.test(text);
 }
@@ -206,7 +224,7 @@ function quickReply(text, state) {
   }
 
   if (lowerText === '4') {
-    state.collectingAppointment = true;
+    beginAppointmentCollection(state);
     return nextAppointmentQuestion(state.appointment);
   }
 
@@ -243,7 +261,7 @@ function quickReply(text, state) {
   }
 
   if (looksLikeAppointmentRequest(text)) {
-    state.collectingAppointment = true;
+    beginAppointmentCollection(state);
     updateAppointmentFromText(state.appointment, text);
     return nextAppointmentQuestion(state.appointment);
   }
@@ -303,6 +321,60 @@ async function generateAiReply(state, userText) {
   return response.text?.trim() || 'Sorry, I am not sure about that. Would you like me to hand this over to our clinic staff?';
 }
 
+function telegramContact(message) {
+  const username = message.from?.username ? `@${message.from.username}` : '';
+  const displayName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(' ');
+
+  return [username, displayName].filter(Boolean).join(' / ') || `Chat ID ${message.chat.id}`;
+}
+
+async function saveAppointmentLead(message, appointment) {
+  if (!APPS_SCRIPT_WEBHOOK_URL || !INQUIRY_SHARED_SECRET) {
+    console.warn('Appointment collected but Google Sheet bridge settings are missing.');
+    return;
+  }
+
+  const lead = {
+    capturedAt: new Date().toISOString(),
+    customerName: appointment.name,
+    whatsappNumber: appointment.phone,
+    inquiryType: 'Appointment Request',
+    treatment: appointment.treatment,
+    preferredDate: appointment.preferredDateTime,
+    status: 'New',
+    source: 'Telegram'
+  };
+  const note = `Telegram demo booking from ${telegramContact(message)}.`;
+
+  try {
+    const response = await fetch(APPS_SCRIPT_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        secret: INQUIRY_SHARED_SECRET,
+        lead,
+        note
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Google Sheet bridge returned ${response.status}: ${await response.text()}`);
+    }
+
+    const result = await response.json();
+    if (!result.ok) {
+      throw new Error(`Google Sheet bridge rejected the lead: ${JSON.stringify(result)}`);
+    }
+
+    console.log(`Saved Telegram appointment request for ${appointment.name}.`);
+  } catch (error) {
+    // Keep the patient-facing demo responsive if the Sheet bridge is temporarily unavailable.
+    console.error('Google Sheet lead save failed:', error);
+  }
+}
+
 async function sendTelegramMessage(chatId, text) {
   if (!TELEGRAM_BOT_TOKEN) {
     console.log(`Telegram token missing. Reply for chat ${chatId}: ${text}`);
@@ -360,6 +432,7 @@ async function handleTelegramMessage(message) {
 
     if (missingAppointmentFields(state.appointment).length === 0) {
       state.collectingAppointment = false;
+      await saveAppointmentLead(message, state.appointment);
     }
 
     rememberMessage(state, 'user', userText);

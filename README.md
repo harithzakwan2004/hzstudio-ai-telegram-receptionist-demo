@@ -25,6 +25,7 @@ This demo can answer common clinic questions, collect appointment requests, and 
   - Preferred date/time
   - Treatment needed
   - Phone number
+- Sends each completed appointment request to the HZStudio AI Google Sheet bridge
 - Uses simple in-memory conversation memory per Telegram chat
 - Supports `/start`, `/reset`, and `/demo`
 - Includes a health check route at `GET /`
@@ -54,6 +55,8 @@ CLINIC_NAME=Smile Dental Clinic
 CLINIC_LOCATION=123 Main Street, Kuala Lumpur
 CLINIC_HOURS=Monday to Saturday, 9:00 AM to 6:00 PM
 CLINIC_PHONE=+6012-345 6789
+APPS_SCRIPT_WEBHOOK_URL=https://script.google.com/macros/s/your_deployment_id/exec
+INQUIRY_SHARED_SECRET=your_private_sheet_bridge_secret
 PORT=3000
 ```
 
@@ -97,6 +100,8 @@ Telegram AI receptionist demo is running.
    - `CLINIC_LOCATION`
    - `CLINIC_HOURS`
    - `CLINIC_PHONE`
+   - `APPS_SCRIPT_WEBHOOK_URL`
+   - `INQUIRY_SHARED_SECRET`
    - `PORT`
 7. Deploy the web service.
 8. Copy your Render URL, for example:
@@ -135,6 +140,7 @@ POST https://your-app-name.onrender.com/telegram/webhook
 
 - This demo uses server memory only. If the server restarts, chat memory is cleared.
 - Appointments are only requests. The bot tells customers that clinic staff will confirm.
+- Completed appointment requests are saved to the configured Google Sheet bridge. If that bridge is temporarily unavailable, the Telegram bot continues replying and logs the save error.
 - Pricing is handled with a disclaimer because final price depends on dentist assessment.
 - Emergency or urgent symptoms are directed to call the clinic immediately or seek emergency care.
 - For production use, add a database, staff dashboard, lead notifications, and WhatsApp/WATI integration.
