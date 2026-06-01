@@ -23,6 +23,7 @@ This demo can answer common clinic questions, collect appointment requests, and 
 - Answers opening hours, location, services, pricing disclaimer, emergency instructions, and human handoff requests
 - Handles promotion questions without inventing clinic offers
 - Retries once when Gemini returns an incomplete response
+- Registers its live Telegram webhook automatically when the service starts
 - Collects appointment request details:
   - Customer name
   - Preferred date/time
@@ -59,6 +60,7 @@ CLINIC_LOCATION=123 Main Street, Kuala Lumpur
 CLINIC_HOURS=Monday to Saturday, 9:00 AM to 6:00 PM
 CLINIC_PHONE=+6012-345 6789
 CLINIC_PROMOTIONS=No active promotions at the moment.
+PUBLIC_BASE_URL=https://your-render-service.onrender.com
 APPS_SCRIPT_WEBHOOK_URL=https://script.google.com/macros/s/your_deployment_id/exec
 INQUIRY_SHARED_SECRET=your_private_sheet_bridge_secret
 PORT=3000
@@ -105,6 +107,7 @@ Telegram AI receptionist demo is running.
    - `CLINIC_HOURS`
    - `CLINIC_PHONE`
    - `CLINIC_PROMOTIONS`
+   - `PUBLIC_BASE_URL`
    - `APPS_SCRIPT_WEBHOOK_URL`
    - `INQUIRY_SHARED_SECRET`
    - `PORT`

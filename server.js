@@ -13,6 +13,7 @@ const {
   CLINIC_HOURS = 'our usual clinic hours',
   CLINIC_PHONE = 'the clinic phone number',
   CLINIC_PROMOTIONS = '',
+  PUBLIC_BASE_URL,
   APPS_SCRIPT_WEBHOOK_URL,
   INQUIRY_SHARED_SECRET,
   PORT = 3000
@@ -567,6 +568,31 @@ async function sendTelegramMessage(chatId, text) {
   }
 }
 
+async function registerTelegramWebhook() {
+  if (!TELEGRAM_BOT_TOKEN || !PUBLIC_BASE_URL) {
+    console.warn('Missing Telegram token or PUBLIC_BASE_URL. Automatic webhook registration is disabled.');
+    return;
+  }
+
+  const webhookUrl = `${PUBLIC_BASE_URL.replace(/\/+$/, '')}/telegram/webhook`;
+  const response = await fetch(`${TELEGRAM_API_URL}/setWebhook`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      url: webhookUrl,
+      allowed_updates: ['message']
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Telegram setWebhook failed: ${await response.text()}`);
+  }
+
+  console.log('Telegram webhook registered for the live Render service.');
+}
+
 async function handleTelegramMessage(message) {
   const chatId = message.chat.id;
   const userText = message.text?.trim();
@@ -673,4 +699,7 @@ app.post('/telegram/webhook', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Telegram AI receptionist demo is running on port ${PORT}.`);
+  registerTelegramWebhook().catch((error) => {
+    console.error('Telegram webhook registration failed:', error);
+  });
 });
