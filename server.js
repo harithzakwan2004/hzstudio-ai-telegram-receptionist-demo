@@ -92,23 +92,31 @@ function isMalay(state) {
   return state.language === 'ms';
 }
 
+function requestsMalay(text) {
+  return /bahasa melayu|bahasa malaysia|cakap melayu|cakap bm|boleh.*melayu|tak faham|x faham|nak.*melayu|^(?:guna |cakap |tukar |switch )?bm\??$/i.test(text.trim());
+}
+
+function requestsEnglish(text) {
+  return /speak english|in english|bahasa inggeris|cakap english/i.test(text);
+}
+
 function detectLanguage(text, state) {
-  if (/bahasa melayu|bahasa malaysia|\bbm\b|cakap melayu|cakap bm|boleh.*melayu|tak faham|x faham|nak.*melayu/i.test(text)) {
+  if (requestsMalay(text)) {
     state.language = 'ms';
   }
 
-  if (/speak english|in english|bahasa inggeris|cakap english/i.test(text)) {
+  if (requestsEnglish(text)) {
     state.language = 'en';
   }
 }
 
 function languagePreferenceReply(text, state) {
-  if (/bahasa melayu|bahasa malaysia|\bbm\b|cakap melayu|cakap bm|boleh.*melayu|tak faham|x faham|nak.*melayu/i.test(text)) {
+  if (requestsMalay(text)) {
     state.language = 'ms';
     return 'Boleh, tiada masalah. Saya akan bantu anda dalam Bahasa Melayu. Anda boleh tanya tentang servis, harga, promosi, lokasi, waktu operasi, atau janji temu.';
   }
 
-  if (/speak english|in english|bahasa inggeris|cakap english/i.test(text)) {
+  if (requestsEnglish(text)) {
     state.language = 'en';
     return 'Of course. I will continue in English. You can ask about services, pricing, promotions, location, opening hours, or appointments.';
   }
